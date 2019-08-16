@@ -29,10 +29,10 @@ type MovieIn struct{
 func init(){
 	orm.Debug=true
 	orm.RegisterDataBase("default", "mysql", "root:root1128@tcp(127.0.0.1:3306)/test?charset=utf8", 30)
-	orm.RegisterModel(new(MovieIn))
+	orm.RegisterModel(new(MovieIn)) //生成数据表表单映射
 	db = orm.NewOrm()
 }
-
+//添加电影
 func AddMovie(movie_in *MovieIn)(int64 ,error){
 	movie_in.Id=0
 	id,err :=db.Insert(movie_in)

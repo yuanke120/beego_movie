@@ -11,9 +11,9 @@ type CwMovieController struct {
 	beego.Controller
 }
 func (c *CwMovieController) CwMovie(){
-	var movieIn models.MovieIn  //models里面movie_in数据结构
-	models.ConnectRedis("127.0.0.1:6379")
-	//爬虫url
+	var movieIn models.MovieIn  //先声明models里面movie_in数据结构
+	models.ConnectRedis("127.0.0.1:6379")	//连接redis
+	//爬虫入口url
 	Yurl :="https://movie.douban.com/subject/26794435/"
 	models.PutinQueue(Yurl)
 	for{
@@ -24,16 +24,17 @@ func (c *CwMovieController) CwMovie(){
 		Yurl =models.PopformQueue()
 		//判断Yurl是否访问过
 		if models.IsVisit(Yurl){
-			continue
+			continue  //访问过就跳过
 		}
-		//然后http请求GET方法
+
+		//爬取然后http请求GET方法
 		ysp :=httplib.Get(Yurl)
 		//设置User-agent以及cookie是为了防止403
 		ysp.Header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0")
 		ysp.Header("Cookie",`bid=tv0lb0GApLA; __utmz=30149280.1565105160.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmz=223695111.1565105160.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); ll="118172"; __yadk_uid=rPXU2pV08tosySZITVKc6WqiDxg1yM34; trc_cookie_storage=taboola%2520global%253Auser-id%3D26be11bb-c5c3-4089-ac13-5c97c018848e-tuct443da79; _vwo_uuid_v2=D0BE3A7C8D6FDBAAFB2F24B1968F1641E|7a9598107c12f0e75124be05627ec0e4; _pk_id.100001.4cf6=bf61d8d98743d47a.1565105160.4.1565721031.1565690492.; _pk_ses.100001.4cf6=*; __utma=30149280.1917044307.1565105160.1565690451.1565721031.4; __utmb=30149280.0.10.1565721031; __utmc=30149280; __utma=223695111.520476801.1565105160.1565690451.1565721031.4; __utmb=223695111.0.10.1565721031; __utmc=223695111; __gads=ID=d0b1ccfd8077bfba:T=1565721033:S=ALNI_MbtqdWrTe5WLVeoldAi-uBeQJLO8Q`)
 		//获取url数据
 		yMovieHtml, err :=ysp.String()
-		if err!=nil{
+		if err!=nil{ //得到url内容
 			panic(err)
 		}
 		//获取电影名称
@@ -56,7 +57,6 @@ func (c *CwMovieController) CwMovie(){
 
 		//提取该页面的所有连接
 		urls :=models.GetMovieUrls(yMovieHtml)
-		//redis
 		//遍历url
 		//为了把url写入队列
 		//同样需要开启一个协程，这个协程专门负责从队列中取，负责get，set，
@@ -69,7 +69,8 @@ func (c *CwMovieController) CwMovie(){
 		}
 		//Yurl要记录到set集合里，表明这个url访问过
 		   models.AddToSet(Yurl)
-		   time.Sleep(time.Second) //适当休息
+		//为了防止爬取速度过快，每次爬完一部电影休息一秒叫适当休息
+		   time.Sleep(time.Second)
 	}
 	       c.Ctx.WriteString("爬虫结束了")
 }
