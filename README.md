@@ -1,2 +1,2 @@
 # beego_movie
-beege是世界上最好的语言
+beege是世界上最简单的框架
